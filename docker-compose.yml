@@ -45,6 +45,8 @@ services:
       - /app/node_modules
     working_dir: /app
     command: npm run dev
+    environment:
+      - NEXT_PUBLIC_DOCKER=true
 
 volumes:
   db_data:
