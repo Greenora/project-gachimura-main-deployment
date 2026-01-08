@@ -1,0 +1,6 @@
+[submodule "frontend"]
+	path = frontend
+	url = https://github.com/Greenora/project-gachimura-front-next-deployment
+[submodule "backend"]
+	path = backend
+	url = https://github.com/Greenora/project-gachimura-backend-nest-deployment
