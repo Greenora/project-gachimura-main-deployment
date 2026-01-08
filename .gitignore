@@ -1,0 +1,37 @@
+# dependencies
+/frontend/node_modules
+/backend/node_modules
+
+# next.js
+/frontend/.next/
+/frontend/out/
+
+# nest.js
+/backend/dist/
+/backend/build/
+
+# production
+/frontend/build
+
+# testing
+/frontend/coverage
+/backend/coverage
+/backend/.nyc_output
+
+# misc
+.DS_Store
+*.pem
+*.log
+
+# env files
+.env*
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini

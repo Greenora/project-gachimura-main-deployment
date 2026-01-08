@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db:
     image: mysql:8.0
@@ -16,14 +14,16 @@ services:
 
   backend:
     build:
-      context: ../backend
+      context: ./backend
       dockerfile: Dockerfile
     container_name: gachimura-backend
     ports:
       - "8000:3000"
     volumes:
-      - ../backend:/usr/src/app
+      - ./backend:/usr/src/app
       - /usr/src/app/node_modules
+    working_dir: /usr/src/app
+    command: npm run start:dev
     depends_on:
       - db
     environment:
@@ -35,14 +35,16 @@ services:
 
   frontend:
     build:
-      context: ../frontend
+      context: ./frontend
       dockerfile: Dockerfile
     container_name: gachimura-frontend
     ports:
       - "3000:3000"
     volumes:
-      - ../frontend:/app
+      - ./frontend:/app
       - /app/node_modules
+    working_dir: /app
+    command: npm run dev
 
 volumes:
   db_data:
