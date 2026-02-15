@@ -104,7 +104,7 @@ graph LR
 
 ---
 
-## 📊 데이터베이스 설계 (ER Diagram)
+## 📊 데이터베이스 설계 (ER Diagram, Mermaid.js로 자동 생성) 
 
 ```mermaid
 erDiagram
