@@ -31,7 +31,9 @@ services:
       DB_PORT: 3306
       DB_USERNAME: root
       DB_PASSWORD: root
-      DB_DATABASE: gachimura
+      DB_NAME: gachimura
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
 
   frontend:
     build:
