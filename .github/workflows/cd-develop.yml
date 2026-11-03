@@ -20,11 +20,12 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            set -eu
             cd /home/ubuntu/project-gachimura-main-deployment
             
             # 메인 저장소 develop 브랜치 최신화
             git fetch origin develop
-            git reset --hard origin/develop
+            git reset --hard "${{ github.sha }}"
             
             # 백엔드 & 프론트엔드 서브모듈 동기화 및 최신화
             git submodule update --init --recursive
