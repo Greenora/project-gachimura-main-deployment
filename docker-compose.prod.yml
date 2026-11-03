@@ -44,6 +44,7 @@ services:
       DB_NAME: ${DB_NAME:-gachimura}
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET:-your-jwt-secret}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://gachimura.com}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
       SMTP_HOST: ${SMTP_HOST:-}
