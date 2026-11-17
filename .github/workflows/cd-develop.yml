@@ -6,6 +6,11 @@ on:
     branches:
       - develop
 
+# 같은 서버의 빌드가 겹치지 않도록 실행 중인 배포가 끝난 뒤 진행합니다.
+concurrency:
+  group: gachimura-ec2-develop
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Auto Deploy to EC2
