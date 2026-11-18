@@ -1,0 +1,70 @@
+# ==============================================================================
+# GACHIMURA Application - Green Environment
+# Ports: Backend 3002, Frontend 4002 (로컬 헬스체크 및 격리용)
+# ==============================================================================
+
+services:
+  backend-green:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: gachimura-backend-green
+    ports:
+      - "127.0.0.1:3002:3000"
+    environment:
+      DB_HOST: ${DB_HOST:-database}
+      DB_PORT: 3306
+      DB_USERNAME: ${DB_USERNAME:-user}
+      DB_PASSWORD: ${DB_PASSWORD:-password}
+      DB_NAME: ${DB_NAME:-gachimura}
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:-your-jwt-secret}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://gachimura.com}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      GOOGLE_VISION_CREDENTIALS_BASE64: ${GOOGLE_VISION_CREDENTIALS_BASE64:-}
+      WEB_PUSH_PUBLIC_KEY: ${WEB_PUSH_PUBLIC_KEY:-}
+      WEB_PUSH_PRIVATE_KEY: ${WEB_PUSH_PRIVATE_KEY:-}
+      WEB_PUSH_SUBJECT: ${WEB_PUSH_SUBJECT:-https://gachimura.com}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+      PASSWORD_RESET_URL: ${PASSWORD_RESET_URL:-}
+      EMAIL_VERIFICATION_REQUIRED: ${EMAIL_VERIFICATION_REQUIRED:-true}
+    volumes:
+      - /home/ubuntu/gachimura-data/uploads:/usr/src/app/uploads
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  frontend-green:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-}
+        NEXT_PUBLIC_KAKAO_CLIENT_ID: ${NEXT_PUBLIC_KAKAO_CLIENT_ID}
+        NEXT_PUBLIC_KAKAO_CLIENT_SECRET: ${NEXT_PUBLIC_KAKAO_CLIENT_SECRET}
+        NEXT_PUBLIC_KAKAO_JS_KEY: ${NEXT_PUBLIC_KAKAO_JS_KEY}
+        NEXT_PUBLIC_GOOGLE_MAP_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAP_API_KEY}
+        NEXT_PUBLIC_LINE_CLIENT_ID: ${NEXT_PUBLIC_LINE_CLIENT_ID}
+    container_name: gachimura-frontend-green
+    ports:
+      - "127.0.0.1:4002:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+      NEXT_PUBLIC_DOCKER: "true"
+      INTERNAL_API_URL: "http://gachimura-backend-green:3000/api"
+    depends_on:
+      - backend-green
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    name: gachimura-network
+    external: true

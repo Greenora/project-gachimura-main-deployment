@@ -22,6 +22,9 @@
 .DS_Store
 *.pem
 *.log
+__pycache__/
+*.pyc
+screenshots/
 
 # env files
 .env*

@@ -137,16 +137,59 @@ erDiagram
 
 ---
 
-## ⚙️ 실행 방법 (Local Setup)
+## ⚙️ 실행 및 배포 방법 (Execution & Deployment)
 
-### Docker 사용 (권장)
+### 1️⃣ 로컬 개발 환경 (Local Development)
 ```bash
-docker-compose up --build
+# Docker Compose 일괄 실행
+docker compose up --build
+
+# 또는 개별 수동 실행
+# Backend: cd backend && npm install && npm run start:dev
+# Frontend: cd frontend && npm install && npm run dev
 ```
 
-### Manual 실행
-- **Backend**: `cd backend && npm install && npm run start:dev`
-- **Frontend**: `cd frontend && npm install && npm run dev`
+### 2️⃣ 운영 환경 무중단 배포 (Zero-Downtime Blue-Green Deployment)
+단일 EC2 인스턴스 내에서 **추가 과금 없이 ($0)** 다운타임 0.x초 및 자동 롤백을 지원하는 **컨테이너 포트 스위칭** 구조입니다.
+
+```mermaid
+graph TD
+    User([사용자 / ALB]) -->|80 포트| Nginx[gachimura-nginx]
+    
+    subgraph "상시 인프라 (docker-compose.base.yml)"
+        Nginx
+        DB[(gachimura-db: MySQL 8.0)]
+    end
+
+    subgraph "Blue 환경 (:3001, :4001)"
+        BE_Blue[backend-blue]
+        FE_Blue[frontend-blue]
+    end
+
+    subgraph "Green 환경 (:3002, :4002)"
+        BE_Green[backend-green]
+        FE_Green[frontend-green]
+    end
+
+    Nginx -.->|Active Upstream 스위칭| BE_Blue
+    Nginx -.->|Active Upstream 스위칭| FE_Blue
+    BE_Blue --> DB
+    BE_Green --> DB
+```
+
+* **배포 스크립트 실행 (수동 배포 시)**:
+```bash
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh
+```
+* **동작 프로세스**:
+  1. `docker-compose.base.yml` 가동 확인 (DB, Nginx)
+  2. 현재 활성 환경(`blue` 또는 `green`) 확인 후 비활성 대상(`target`)에 신규 빌드 및 컨테이너 기동
+  3. 백엔드(`/health`) 및 프론트엔드(`/`) 자동 Health Check 수행
+  4. 헬스체크 성공 시 `upstream.conf` 갱신 및 `nginx -s reload` (0.x초 무중단 스위칭)
+  5. 이전 구버전 컨테이너 정상 종료(`down`) 및 미사용 이미지 정리(`docker image prune -f`)
+  6. **헬스체크 실패 시**: 신규 컨테이너 자동 폐기 및 기존 환경 100% 보존 (**장애 0초 즉시 롤백**)
+* **CI/CD 자동화**: `develop` 브랜치에 Push 시 GitHub Actions가 EC2에 접속하여 `./scripts/deploy.sh`를 자동 실행합니다.
 
 ---
 
