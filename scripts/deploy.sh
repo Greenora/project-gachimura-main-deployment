@@ -64,10 +64,15 @@ echo ">>> [4/7] [${TARGET}] 서비스 Health Check 시작 (최대 60초)..."
 MAX_RETRIES=30
 RETRY_INTERVAL=2
 
-# 4-1. 백엔드 헬스체크 (/health)
+# 4-1. 백엔드 헬스체크 (/api/health)
 BACKEND_HEALTHY=false
 for i in $(seq 1 $MAX_RETRIES); do
-    STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${TARGET_BACKEND_PORT}/health" || true)
+    # NestJS 전역 접두사 /api 적용: /api/health 우선 확인 후 /health 폴백
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${TARGET_BACKEND_PORT}/api/health" || true)
+    if [ "$STATUS" != "200" ]; then
+        STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${TARGET_BACKEND_PORT}/health" || true)
+    fi
+
     if [ "$STATUS" = "200" ]; then
         echo "  ✅ Backend Health Check 성공! (HTTP 200, 시도: ${i}/${MAX_RETRIES})"
         BACKEND_HEALTHY=true
@@ -82,7 +87,7 @@ FRONTEND_HEALTHY=false
 if [ "$BACKEND_HEALTHY" = "true" ]; then
     for i in $(seq 1 $MAX_RETRIES); do
         STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${TARGET_FRONTEND_PORT}/" || true)
-        if [ "$STATUS" = "200" ] || [ "$STATUS" = "307" ] || [ "$STATUS" = "308" ]; then
+        if [ "$STATUS" = "200" ] || [ "$STATUS" = "301" ] || [ "$STATUS" = "302" ] || [ "$STATUS" = "307" ] || [ "$STATUS" = "308" ]; then
             echo "  ✅ Frontend Health Check 성공! (HTTP ${STATUS}, 시도: ${i}/${MAX_RETRIES})"
             FRONTEND_HEALTHY=true
             break
@@ -134,7 +139,8 @@ if [ "$CURRENT" != "none" ]; then
     docker compose -f "docker-compose.${CURRENT}.yml" down
     echo "  ✅ 이전 환경 [${CURRENT}] 컨테이너 안전 종료 완료."
 else
-    echo ">>> [6/7] 최초 배포이므로 이전 환경 종료 단계를 건너뜁니다."
+    echo ">>> [6/7] 최초 마이그레이션 배포 완료. 기존 레거시 컨테이너(prod) 정리..."
+    docker compose -f docker-compose.prod.yml down --remove-orphans 2>/dev/null || true
 fi
 
 echo ">>> [7/7] 미사용 도커 이미지 정리 (Docker image prune)..."
