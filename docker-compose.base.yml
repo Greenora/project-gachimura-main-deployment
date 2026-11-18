@@ -43,7 +43,7 @@ services:
 
 volumes:
   mysql_data:
-    name: gachimura-base_mysql_data
+    name: ${MYSQL_DATA_VOLUME:?MYSQL_DATA_VOLUME must name the existing production DB volume}
     external: true
 
 networks:

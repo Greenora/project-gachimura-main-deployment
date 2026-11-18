@@ -56,6 +56,27 @@ else
     TARGET_FRONTEND_HOST="gachimura-frontend-blue"
 fi
 
+# 자동 배포는 사용 중인 DB 저장소를 다른 볼륨으로 바꾸지 않습니다.
+PLANNED_DB_VOLUME=$(docker compose -p gachimura-base -f docker-compose.base.yml config --format json | python3 -c '
+import json, sys
+try:
+    volume = json.load(sys.stdin)["volumes"]["mysql_data"]
+    if volume.get("external") is not True or not isinstance(volume.get("name"), str) or not volume["name"]:
+        raise ValueError()
+    print(volume["name"])
+except (KeyError, TypeError, ValueError):
+    raise SystemExit("기존 외부 DB 볼륨 설정을 확인해주세요.")
+')
+docker volume inspect "$PLANNED_DB_VOLUME" >/dev/null
+DATABASE_CONTAINER_ID=$(docker ps -aq --filter "name=^/gachimura-db$")
+if [ -n "$DATABASE_CONTAINER_ID" ]; then
+    CURRENT_DB_VOLUME=$(docker inspect "$DATABASE_CONTAINER_ID" --format '{{range .Mounts}}{{if eq .Destination "/var/lib/mysql"}}{{.Name}}{{end}}{{end}}')
+    if [ "$CURRENT_DB_VOLUME" != "$PLANNED_DB_VOLUME" ]; then
+        echo "[ERROR] 현재 DB와 배포 설정의 저장소가 다릅니다. 확인된 복구 절차로 먼저 연결한 뒤 재시도하세요."
+        exit 1
+    fi
+fi
+
 # git reset이 되돌린 연결 설정을 현재 가동 환경으로 복원한 뒤 프록시를 갱신합니다.
 ACTIVE="${CURRENT}"
 if [ "$ACTIVE" = "none" ]; then ACTIVE="$TARGET"; fi
