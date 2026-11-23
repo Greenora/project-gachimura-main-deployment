@@ -31,6 +31,9 @@ git() {
 docker() { printf 'docker %s\\n' "$*" >> "$TEST_CALL_LOG"; }
 '''
         with tempfile.TemporaryDirectory() as directory:
+            scripts = Path(directory) / 'scripts'
+            scripts.mkdir()
+            (scripts / 'deploy.sh').write_text('#!/bin/sh\nprintf "deploy.sh\\n" >> "$TEST_CALL_LOG"\n')
             calls_path = Path(directory) / 'calls'
             commit_path = Path(directory) / 'commit'
             result = subprocess.run(
@@ -61,7 +64,7 @@ docker() { printf 'docker %s\\n' "$*" >> "$TEST_CALL_LOG"; }
         status, calls, deployed, expected = self.run_deployment()
         self.assertEqual(status, 0)
         self.assertEqual(deployed, expected)
-        self.assertIn('docker compose -f docker-compose.prod.yml up -d --build', calls)
+        self.assertEqual(calls[-1], 'deploy.sh')
 
 
 if __name__ == '__main__':
