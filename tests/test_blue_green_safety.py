@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class BlueGreenSafetyTest(unittest.TestCase):
     def deploy(self, current='blue', healthy=True, reload_ok=True, legacy=False, inspect_ok=True, config_ok=True,
                target_volume='fixture-production-data', current_volume='fixture-production-data',
-               volume_exists=True, database_exists=True, database_inspect_ok=True):
+               volume_exists=True, database_exists=True, database_inspect_ok=True,
+               available_kib=8 * 1024 * 1024, disk_ok=True):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / 'scripts').mkdir()
@@ -65,6 +66,10 @@ esac
 ''')
             (commands / 'curl').write_text('#!/bin/sh\nif [ "$TEST_HEALTHY" = 1 ]; then printf 200; else printf 503; fi\n')
             (commands / 'sleep').write_text('#!/bin/sh\nexit 0\n')
+            (commands / 'df').write_text('''#!/bin/sh
+[ "$TEST_DISK_OK" = 1 ] || exit 1
+printf 'Filesystem 1024-blocks Used Available Capacity Mounted on\\nfixture 16777216 0 %s 0%% /fixture\\n' "$TEST_AVAILABLE_KIB"
+''')
             for executable in commands.iterdir():
                 executable.chmod(0o700)
             result = subprocess.run(
@@ -78,11 +83,27 @@ esac
                      'TEST_VOLUME_EXISTS': str(int(volume_exists)),
                      'TEST_DATABASE_EXISTS': str(int(database_exists)),
                      'TEST_DATABASE_INSPECT_OK': str(int(database_inspect_ok)),
+                     'TEST_AVAILABLE_KIB': str(available_kib), 'TEST_DISK_OK': str(int(disk_ok)),
                      'TEST_CALL_LOG': str(root / 'calls'), 'TEST_BASE_UPSTREAM': str(root / 'base')},
             )
-            calls = (root / 'calls').read_text().splitlines()
+            calls = (root / 'calls').read_text().splitlines() if (root / 'calls').exists() else []
             base = (root / 'base').read_text() if (root / 'base').exists() else ''
             return result.returncode, calls, active.read_text(), base
+
+    def test_low_or_unreadable_free_space_stops_before_any_container_or_proxy_changes(self):
+        for values in ({'available_kib': 4 * 1024 * 1024 - 1},
+                       {'available_kib': 'invalid'}, {'disk_ok': False}):
+            with self.subTest(values=values):
+                status, calls, active, base = self.deploy(current='green', **values)
+                self.assertNotEqual(status, 0)
+                self.assertEqual(calls, [])
+                self.assertEqual(active, 'set $backend_upstream http://gachimura-backend-blue:3000;\n')
+                self.assertEqual(base, '')
+
+    def test_free_space_at_minimum_allows_normal_deployment(self):
+        status, calls, _, _ = self.deploy(available_kib=4 * 1024 * 1024)
+        self.assertEqual(status, 0)
+        self.assertIn('compose -p gachimura-base -f docker-compose.base.yml build nginx', calls)
 
     def test_green_stays_active_while_building_blue_after_git_reset(self):
         status, calls, active, base = self.deploy(current='green')

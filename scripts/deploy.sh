@@ -11,6 +11,15 @@ CONF_DIR="${PROJECT_DIR}/nginx/conf.d"
 ACTIVE_ENV_FILE="${CONF_DIR}/active-env.inc"
 
 cd "${PROJECT_DIR}"
+
+# 빌드 전 안전 여유이며 모든 빌드의 성공을 보장하는 크기는 아닙니다.
+MIN_FREE_KIB=$((4 * 1024 * 1024))
+AVAILABLE_KIB=$(df -Pk "${PROJECT_DIR}" | awk 'NR == 2 { print $4 }')
+if ! [[ "$AVAILABLE_KIB" =~ ^[0-9]+$ ]] || (( AVAILABLE_KIB < MIN_FREE_KIB )); then
+    echo "[ERROR] 배포 전 최소 4GiB의 여유 공간을 확보해주세요. 실행 중인 서비스는 변경하지 않았습니다."
+    exit 1
+fi
+
 mkdir -p "${CONF_DIR}"
 
 echo "=============================================================================="

@@ -3,8 +3,15 @@
 # Ports: Backend 3002, Frontend 4002 (로컬 헬스체크 및 격리용)
 # ==============================================================================
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   backend-green:
+    logging: *default-logging
     build:
       context: ./backend
       dockerfile: Dockerfile.prod
@@ -42,6 +49,7 @@ services:
     restart: unless-stopped
 
   frontend-green:
+    logging: *default-logging
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
