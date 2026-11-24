@@ -1,5 +1,12 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   nginx:
+    logging: *default-logging
     build: ./nginx
     ports:
       - "80:80"
@@ -11,6 +18,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    logging: *default-logging
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
@@ -32,6 +40,7 @@ services:
     restart: unless-stopped
 
   backend:
+    logging: *default-logging
     build:
       context: ./backend
       dockerfile: Dockerfile.prod
@@ -69,6 +78,7 @@ services:
     restart: unless-stopped
 
   database:
+    logging: *default-logging
     image: mysql:8.0
     command:
       - --character-set-server=utf8mb4
